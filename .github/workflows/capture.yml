@@ -6,7 +6,7 @@ name: feed-sync
 
 on:
   schedule:
-    - cron: "7,37 * * * *"     # every 30 min (off-minute to avoid the top-of-hour herd)
+    - cron: "8 * * * *"        # hourly (downstream Opus-enrichment is hourly; halves X-scrape load + ban-risk)
   workflow_dispatch: {}          # also runnable manually
 
 concurrency:
@@ -46,7 +46,7 @@ jobs:
           printf '%s' "$WATCHLIST_JSON" > capture/watchlist.json
           printf '%s' "$RCLONE_CONF" > ~/.config/rclone/rclone.conf
           cat > capture/config.json <<EOF
-          {"x_cookies":"secrets/cookies.json","tg_api_id":$TG_API_ID,"tg_api_hash":"$TG_API_HASH","tg_session":"secrets/tg.session","raw_db":"raw_store.db","lookback_min":45,"x_per_account":10,"x_delay_sec":3.0,"tg_per_channel":30}
+          {"x_cookies":"secrets/cookies.json","tg_api_id":$TG_API_ID,"tg_api_hash":"$TG_API_HASH","tg_session":"secrets/tg.session","raw_db":"raw_store.db","lookback_min":75,"x_per_account":10,"x_delay_sec":3.0,"tg_per_channel":30}
           EOF
 
       - name: Pull previous store from cloud
