@@ -1,0 +1,12 @@
+# local runtime + secrets — never commit
+.venv/
+__pycache__/
+*.pyc
+*.db
+*.db-wal
+*.db-shm
+*.session
+*.session-journal
+secrets/
+config.json
+watchlist.json

@@ -1,0 +1,57 @@
+# Scheduled feed sync. Runs every 30 min on GitHub-hosted runners.
+# Collects posts from the configured sources, stores them in a small SQLite file,
+# and syncs that file to cloud storage. All credentials are encrypted GitHub
+# Secrets and are reconstructed at runtime — nothing sensitive lives in the repo.
+name: feed-sync
+
+on:
+  schedule:
+    - cron: "7,37 * * * *"     # every 30 min (off-minute to avoid the top-of-hour herd)
+  workflow_dispatch: {}          # also runnable manually
+
+concurrency:
+  group: capture
+  cancel-in-progress: false
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install deps + Chromium
+        run: |
+          pip install -r capture/requirements.txt
+          python -m playwright install --with-deps chromium
+
+      - name: Restore secrets (from GitHub Secrets)
+        env:
+          X_COOKIES_JSON: ${{ secrets.X_COOKIES_JSON }}
+          TG_SESSION_B64: ${{ secrets.TG_SESSION_B64 }}
+          TG_API_ID: ${{ secrets.TG_API_ID }}
+          TG_API_HASH: ${{ secrets.TG_API_HASH }}
+          WATCHLIST_JSON: ${{ secrets.WATCHLIST_JSON }}
+          RCLONE_CONF: ${{ secrets.RCLONE_CONF }}
+        run: |
+          mkdir -p capture/secrets ~/.config/rclone
+          printf '%s' "$X_COOKIES_JSON" > capture/secrets/cookies.json
+          printf '%s' "$TG_SESSION_B64" | base64 -d > capture/secrets/tg.session
+          printf '%s' "$WATCHLIST_JSON" > capture/watchlist.json
+          printf '%s' "$RCLONE_CONF" > ~/.config/rclone/rclone.conf
+          cat > capture/config.json <<EOF
+          {"x_cookies":"secrets/cookies.json","tg_api_id":$TG_API_ID,"tg_api_hash":"$TG_API_HASH","tg_session":"secrets/tg.session","raw_db":"raw_store.db","lookback_min":45,"x_per_account":10,"x_delay_sec":3.0,"tg_per_channel":30}
+          EOF
+
+      - name: Pull previous store from cloud
+        run: rclone copy gdrive:feedsync/raw_store.db capture/ || true
+
+      - name: Capture
+        run: cd capture && python run_capture.py
+
+      - name: Push store back to cloud
+        run: rclone copy capture/raw_store.db gdrive:feedsync/
