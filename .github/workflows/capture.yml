@@ -24,8 +24,10 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install deps + Chromium
+      - name: Install deps + Chromium + rclone
         run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq rclone
           pip install -r capture/requirements.txt
           python -m playwright install --with-deps chromium
 
