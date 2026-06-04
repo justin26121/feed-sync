@@ -46,7 +46,7 @@ jobs:
           printf '%s' "$WATCHLIST_JSON" > capture/watchlist.json
           printf '%s' "$RCLONE_CONF" > ~/.config/rclone/rclone.conf
           cat > capture/config.json <<EOF
-          {"x_cookies":"secrets/cookies.json","tg_api_id":$TG_API_ID,"tg_api_hash":"$TG_API_HASH","tg_session":"secrets/tg.session","raw_db":"raw_store.db","lookback_min":75,"x_per_account":10,"x_delay_sec":3.0,"tg_per_channel":30}
+          {"x_cookies":"secrets/cookies.json","tg_api_id":$TG_API_ID,"tg_api_hash":"$TG_API_HASH","tg_session":"secrets/tg.session","raw_db":"raw_store.db","lookback_min":240,"x_per_account":25,"x_delay_sec":3.0,"tg_per_channel":60}
           EOF
 
       - name: Pull previous store from cloud
